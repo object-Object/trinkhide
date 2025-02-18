@@ -2,6 +2,7 @@ package vg.skye.trinkhide;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.emi.trinkets.api.SlotGroup;
+import dev.emi.trinkets.api.SlotReference;
 import dev.emi.trinkets.api.SlotType;
 import dev.emi.trinkets.api.TrinketsApi;
 import net.fabricmc.api.ModInitializer;
@@ -17,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Set;
 
 public class TrinkHide implements ModInitializer {
 	public static final String MOD_ID = "trinkhide";
@@ -116,14 +116,16 @@ public class TrinkHide implements ModInitializer {
 											ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.list.group", group.getName()), false);
 
 											for (var slot : slots) {
-												var slotName = getSlotName(slot);
-												ctx.getSource().sendSuccess(() -> {
-													var message = Component.translatable("trinkhide.list.slot", slotName);
-													return hiddenSlots.contains(slotName)
-														? message.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)
-														: message;
-												}, false);
-												hiddenSlots.remove(slotName);
+												for (var index = 0; index < slot.getAmount(); index++) {
+													var slotName = getSlotName(slot, index);
+													ctx.getSource().sendSuccess(() -> {
+														var message = Component.translatable("trinkhide.list.slot", slotName);
+														return hiddenSlots.contains(slotName)
+															? message.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)
+															: message;
+													}, false);
+													hiddenSlots.remove(slotName);
+												}
 											}
 										}
 
@@ -142,20 +144,53 @@ public class TrinkHide implements ModInitializer {
 	}
 
 	/** Returns the slot name used by TrinkHide to determine if a slot should be rendered or not. */
-	public static String getSlotName(SlotType slot) {
-		return slot.getGroup() + "/" + slot.getName();
+	public static String getSlotName(SlotReference slot) {
+		return getSlotName(slot.inventory().getSlotType(), slot.index());
+	}
+
+	/** Returns the slot name used by TrinkHide to determine if a slot should be rendered or not.
+	 *  If the slot amount is 1, the index will not be used.
+	 *  <p>
+	 *  Format: `group/slot` (eg. `head/hat`) or `group/slot/index` (eg. `head/face/0`)
+	 *  <p>
+	 *  Throws IllegalArgumentException if the index is out of range for this slot.
+	 * */
+	public static String getSlotName(SlotType slot, int index) throws IllegalArgumentException {
+		if (index < 0 || index >= slot.getAmount()) {
+			throw new IllegalArgumentException("Slot index out of range: " + index);
+		}
+		var name = slot.getGroup() + "/" + slot.getName();
+		return slot.getAmount() > 1
+			? name + "/" + index
+			: name;
 	}
 
 	/** Returns true if this slot name exists for this player. */
 	public static boolean validateSlotName(ServerPlayer player, String slotName) {
-		var parts = slotName.split("/", 2);
-		if (parts.length != 2) return false;
+		// note: this will fail if someone adds a trinket slot like "foo/bar/baz", but based on the trinkets source code I don't think that's supported?
+		var parts = slotName.split("/", 3);
+		if (parts.length < 2) return false;
 
-		var groupKey = parts[0];
-		var slotKey = parts[1];
+		var group = TrinketsApi.getPlayerSlots(player).get(parts[0]);
+		if (group == null) return false;
 
-		var groups = TrinketsApi.getPlayerSlots(player);
-		var group = groups.get(groupKey);
-		return group != null && group.getSlots().containsKey(slotKey);
+		var slot = group.getSlots().get(parts[1]);
+		if (slot == null) return false;
+
+		if (slot.getAmount() > 1) {
+			if (parts.length < 3) return false;
+
+			int index;
+			try {
+				index = Integer.parseInt(parts[2]);
+			} catch (NumberFormatException e) {
+				return false;
+			}
+
+			return index >= 0 && index < slot.getAmount();
+		} else {
+			// slots with amount == 1 don't have the index in their name
+			return parts.length == 2;
+		}
 	}
 }

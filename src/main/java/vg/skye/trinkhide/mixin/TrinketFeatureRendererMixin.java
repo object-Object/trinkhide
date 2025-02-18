@@ -18,8 +18,7 @@ import vg.skye.trinkhide.TrinkHideComponents;
 public class TrinketFeatureRendererMixin {
     @Inject(method = "lambda$render$0", at = @At("HEAD"), cancellable = true)
     private void skipRender(PoseStack matrices, ItemStack stack, SlotReference slotReference, MultiBufferSource vertexConsumers, int light, LivingEntity entity, float limbAngle, float limbDistance, float tickDelta, float animationProgress, float headYaw, float headPitch, TrinketRenderer renderer, CallbackInfo ci) {
-        var slot = slotReference.inventory().getSlotType();
-        var name = TrinkHide.getSlotName(slot);
+        var name = TrinkHide.getSlotName(slotReference);
         var component = TrinkHideComponents.HIDDEN_TRINKETS.getNullable(entity);
         if (component != null && component.getHiddenSlots().contains(name)) {
             ci.cancel();
