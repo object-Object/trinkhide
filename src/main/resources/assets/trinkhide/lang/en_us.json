@@ -1,4 +1,5 @@
 {
   "trinkhide.already_hidden": "Slot was already hidden!",
-  "trinkhide.not_hidden": "Slot was already unhidden!"
+  "trinkhide.not_hidden": "Slot was already unhidden!",
+  "trinkhide.no_slots": "No slots found!"
 }
