@@ -33,7 +33,7 @@ public class TrinkHide implements ModInitializer {
 							.then(Commands
 									.literal("hide")
 									.then(Commands
-											.argument("slot", StringArgumentType.string())
+											.argument("slot", StringArgumentType.greedyString())
 											.executes(ctx -> {
 												var slot = ctx.getArgument("slot", String.class);
 												var player = ctx.getSource().getPlayer();
@@ -61,7 +61,7 @@ public class TrinkHide implements ModInitializer {
 							.then(Commands
 									.literal("show")
 									.then(Commands
-											.argument("slot", StringArgumentType.string())
+											.argument("slot", StringArgumentType.greedyString())
 											.executes(ctx -> {
 												var slot = ctx.getArgument("slot", String.class);
 												var player = ctx.getSource().getPlayer();
