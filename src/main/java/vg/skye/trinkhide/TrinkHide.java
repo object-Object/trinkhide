@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 
 public class TrinkHide implements ModInitializer {
@@ -92,7 +93,7 @@ public class TrinkHide implements ModInitializer {
 											return 0;
 
 										var component = TrinkHideComponents.HIDDEN_TRINKETS.get(player);
-										var hiddenSlots = Set.copyOf(component.getHiddenSlots());
+										var hiddenSlots = new HashSet<>(component.getHiddenSlots());
 
 										var groups = TrinketsApi.getPlayerSlots(player)
 											.values()
@@ -112,16 +113,24 @@ public class TrinkHide implements ModInitializer {
 												.toList();
 											if (slots.isEmpty()) continue;
 
-											ctx.getSource().sendSuccess(() -> Component.literal(group.getName() + ":"), false);
+											ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.list.group", group.getName()), false);
 
 											for (var slot : slots) {
+												var slotName = getSlotName(slot);
 												ctx.getSource().sendSuccess(() -> {
-													var slotName = getSlotName(slot);
-													var message = Component.literal("  " + slotName);
+													var message = Component.translatable("trinkhide.list.slot", slotName);
 													return hiddenSlots.contains(slotName)
 														? message.withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC)
 														: message;
 												}, false);
+												hiddenSlots.remove(slotName);
+											}
+										}
+
+										if (!hiddenSlots.isEmpty()) {
+											ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.list.group.invalid_slots").withStyle(ChatFormatting.RED), false);
+											for (var slotName : hiddenSlots.stream().sorted().toList()) {
+												ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.list.slot", slotName).withStyle(ChatFormatting.RED), false);
 											}
 										}
 

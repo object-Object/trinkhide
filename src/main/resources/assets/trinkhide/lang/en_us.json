@@ -4,5 +4,8 @@
   "trinkhide.not_hidden": "Slot was already unhidden!",
   "trinkhide.unhidden": "Slot is now visible: %s",
   "trinkhide.no_slots": "No slots found!",
-  "trinkhide.invalid_slot": "Invalid slot: %s"
+  "trinkhide.invalid_slot": "Invalid slot: %s",
+  "trinkhide.list.group": "%s:",
+  "trinkhide.list.group.invalid_slots": "Invalid hidden slots:",
+  "trinkhide.list.slot": "  %s"
 }
