@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,10 @@ public class TrinkHide implements ModInitializer {
 												var player = ctx.getSource().getPlayer();
 												if (player == null)
 													return 0;
+												if (!validateSlotName(player, slot)) {
+													ctx.getSource().sendFailure(Component.translatable("trinkhide.invalid_slot", slot));
+													return 1;
+												}
 												var component = TrinkHideComponents.HIDDEN_TRINKETS.get(player);
 												var hiddenSlots = component.getHiddenSlots();
 												if (hiddenSlots.contains(slot)) {
@@ -47,6 +52,7 @@ public class TrinkHide implements ModInitializer {
 												slots.addAll(hiddenSlots);
 												slots.add(slot);
 												component.setHiddenSlots(slots);
+												ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.hidden", slot), false);
 												return 0;
 											})
 									)
@@ -73,6 +79,7 @@ public class TrinkHide implements ModInitializer {
 													slots.add(hiddenSlot);
 												}
 												component.setHiddenSlots(slots);
+												ctx.getSource().sendSuccess(() -> Component.translatable("trinkhide.unhidden", slot), false);
 												return 0;
 											})
 									)
@@ -128,5 +135,18 @@ public class TrinkHide implements ModInitializer {
 	/** Returns the slot name used by TrinkHide to determine if a slot should be rendered or not. */
 	public static String getSlotName(SlotType slot) {
 		return slot.getGroup() + "/" + slot.getName();
+	}
+
+	/** Returns true if this slot name exists for this player. */
+	public static boolean validateSlotName(ServerPlayer player, String slotName) {
+		var parts = slotName.split("/", 2);
+		if (parts.length != 2) return false;
+
+		var groupKey = parts[0];
+		var slotKey = parts[1];
+
+		var groups = TrinketsApi.getPlayerSlots(player);
+		var group = groups.get(groupKey);
+		return group != null && group.getSlots().containsKey(slotKey);
 	}
 }
